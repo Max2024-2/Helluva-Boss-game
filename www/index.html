@@ -33,7 +33,7 @@ button,input,select{font:inherit}button{cursor:pointer;color:inherit}button:focu
 <div class="hud" id="hud"><div class="hudcol"><div class="label" id="objective">ARENA · ONDATA 1</div><div class="bar"><i id="health"></i></div></div><div class="hudcol status"><div class="label" id="player-label">DEMONIO OPERATIVO</div><div class="chip" id="connection">BOT IN ARRIVO</div></div></div>
 <div class="crosshair"></div>
 <section class="layer" id="home"><div class="card"><div class="tag">Co-op infernale · 3D stylizzato</div><h1 class="title">HELL<span>AGENCY</span></h1><p class="copy">Scendi nell’arena, schiva i bot e fai squadra con altri agenti. Una squadra originale, caos garantito.</p><div class="buttons"><button class="btn primary" id="solo">⚔ &nbsp; GIOCA CONTRO I BOT <span>Offline</span></button><button class="btn" id="open-online">◎ &nbsp; GIOCA ONLINE <span>Fino a 4 agenti</span></button><button class="btn" id="characters">✦ &nbsp; SCEGLI IL PERSONAGGIO <span id="selected-name">Nyx Volt</span></button></div><div class="foot">WASD per muoverti · mouse per mirare e sparare · SPAZIO per scatto<br>Il multiplayer richiede il server online aggiornato.</div></div></section>
-<section class="layer hidden" id="online-panel"><div class="card"><div class="tag">Squadra in rete</div><h2 style="margin:8px 0">Entra nell’arena</h2><p class="copy">Inserisci lo stesso codice stanza dei tuoi amici. Il primo a entrare ospita la partita.</p><div class="options"><label class="field">NOME AGENTE<input id="nickname" maxlength="16" value="Agente"></label><label class="field">CODICE STANZA<div class="split"><input id="room-code" maxlength="8" value=""><button class="btn" id="generate" type="button">GENERA</button></div></label><label class="field">SERVER (indirizzo web)<input id="server-url" value="https://helluva-boss-game-server.onrender.com" autocomplete="url"></label><label class="field">PERSONAGGIO<select id="character-select"><option value="0">Nyx Volt · Impulso</option><option value="1">Bruma Ruggine · Guardia</option><option value="2">Ziggy Fumo · Scatto</option></select></label></div><button class="btn primary" id="join">COLLEGATI E GIOCA →</button><button class="btn" id="cancel-online">INDIETRO</button><p class="room" id="net-message">Per giocare via Internet, il server configurato deve avere il multiplayer attivo.</p></div></section>
+<section class="layer hidden" id="online-panel"><div class="card"><div class="tag">Squadra in rete</div><h2 style="margin:8px 0">Gioca online</h2><p class="copy">Crea una stanza e condividi il codice, oppure inserisci il codice ricevuto da un amico. Scegli il tuo nickname: ogni agente usa il proprio.</p><div class="options"><label class="field">NICKNAME AGENTE<input id="nickname" maxlength="16" value="Agente"></label><label class="field">CODICE STANZA<div class="split"><input id="room-code" maxlength="8" value="" autocomplete="off"><button class="btn" id="generate" type="button">GENERA</button></div></label><label class="field">SERVER<input id="server-url" value="https://helluva-boss-game-server.onrender.com" autocomplete="url"></label><label class="field">PERSONAGGIO<select id="character-select"><option value="0">Nyx Volt · Impulso</option><option value="1">Bruma Ruggine · Guardia</option><option value="2">Ziggy Fumo · Scatto</option></select></label></div><div class="buttons"><button class="btn primary" id="create-room" type="button">CREA STANZA</button><button class="btn" id="join" type="button">ENTRA CON CODICE</button><button class="btn" id="cancel-online" type="button">INDIETRO</button></div><p class="room" id="net-message">Puoi ospitare una stanza o entrare con il codice condiviso da un amico.</p></div></section>
 <section class="layer hidden" id="character-panel"><div class="card"><div class="tag">Agenti originali</div><h2 style="margin:8px 0 15px">Scegli chi scende.</h2><div class="buttons"><button class="btn primary" data-character="0">NYX VOLT <span>Impulso · blaster</span></button><button class="btn" data-character="1">BRUMA RUGGINE <span>Guardia · corazza</span></button><button class="btn" data-character="2">ZIGGY FUMO <span>Scatto · rapidità</span></button><button class="btn" id="cancel-characters">TORNA AL MENU</button></div></div></section>
 <section class="layer hidden" id="result"><div class="card"><div class="tag">Rapporto dell’arena</div><h2 id="result-title">Sei fuori combattimento</h2><p id="result-copy" class="copy"></p><button class="btn primary" id="retry">RIPROVA →</button><button class="btn" id="exit">TORNA AL MENU</button></div></section>
 <div class="controls" id="touch-controls"><div class="pad"><button data-dir="up">▲</button><button data-dir="left">◀</button><button data-dir="down">▼</button><button data-dir="right">▶</button></div><button class="attack" id="touch-fire">✦</button></div>
@@ -198,15 +198,19 @@ button,input,select{font:inherit}button{cursor:pointer;color:inherit}button:focu
     let value=$('server-url').value.trim();if(!value)value=location.protocol==='file:'?'http://localhost:3000':location.origin;
     const url=new URL(value);url.protocol=url.protocol==='https:'?'wss:':'ws:';url.pathname='/party';url.search='';url.hash='';return url.toString()
   }
-  function joinOnline(){
-    roomCode=$('room-code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);$('room-code').value=roomCode;
-    if(roomCode.length<4){$('net-message').textContent='Usa un codice stanza di almeno 4 caratteri.';return}
-    $('net-message').textContent='Connessione al server…';
+  function connectOnline(action){
+    roomCode=$('room-code').value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);
+    if(action==='create'&&!roomCode){roomCode=Math.random().toString(36).slice(2,8).toUpperCase()}
+    $('room-code').value=roomCode;
+    if(roomCode.length<4){$('net-message').textContent='Inserisci un codice stanza di almeno 4 caratteri.';return}
+    const nickname=$('nickname').value.trim().slice(0,16);
+    if(!nickname){$('net-message').textContent='Inserisci il tuo nickname.';return}
+    $('net-message').textContent=action==='create'?'Creazione della stanza…':'Ricerca della stanza…';
     try{ws=new WebSocket(onlineUrl())}catch(e){$('net-message').textContent='Indirizzo server non valido.';return}
-    $('join').disabled=true;
-    ws.onopen=()=>ws.send(JSON.stringify({type:'join',room:roomCode,name:$('nickname').value.trim().slice(0,16)||'Agente',character:selected}));
+    $('join').disabled=true;$('create-room').disabled=true;
+    ws.onopen=()=>ws.send(JSON.stringify({type:action,room:roomCode,name:nickname,character:selected}));
     ws.onmessage=event=>{let msg;try{msg=JSON.parse(event.data)}catch(e){return}
-      if(msg.type==='welcome'){netId=msg.id;hostId=msg.hostId;for(const p of msg.players||[])upsertRemote(p);$('net-message').textContent='Connesso! In stanza siete '+((msg.players||[]).length+1)+'.';beginGame('online');sendNet()}
+      if(msg.type==='welcome'){netId=msg.id;hostId=msg.hostId;for(const p of msg.players||[])upsertRemote(p);$('net-message').textContent=action==='create'?'Stanza '+roomCode+' creata. Condividi il codice con i tuoi amici.':'Connesso! In stanza siete '+((msg.players||[]).length+1)+'.';beginGame('online');sendNet()}
       else if(msg.type==='peer')upsertRemote(msg.player);
       else if(msg.type==='leave')removeRemote(msg.id);
       else if(msg.type==='state')upsertRemote(msg.player);
@@ -214,10 +218,10 @@ button,input,select{font:inherit}button{cursor:pointer;color:inherit}button:focu
       else if(msg.type==='host'){hostId=msg.hostId;if(netId===hostId){setNotice('Ora ospiti tu la stanza.');broadcastBots()}}
       else if(msg.type==='damage'&&netId===hostId){const bot=bots.find(b=>b.id===msg.botId);if(bot)damageBot(bot,msg.amount,msg.id)}
       else if(msg.type==='shot'){makeBullet(msg.x,msg.y,msg.z,msg.vx,msg.vz,msg.id,msg.kind==='bot'?'bot':'remote',false)}
-      else if(msg.type==='error'){$('net-message').textContent=msg.message||'Errore della stanza.';$('join').disabled=false}
+      else if(msg.type==='error'){$('net-message').textContent=msg.message||'Errore della stanza.';if(ws&&ws.readyState===WebSocket.OPEN)ws.close();$('join').disabled=false;$('create-room').disabled=false}
     };
-    ws.onerror=()=>{$('net-message').textContent='Server non raggiungibile. Verifica che il multiplayer sia attivo.';$('join').disabled=false};
-    ws.onclose=()=>{if(mode==='online'&&state==='playing'){setNotice('Connessione online interrotta.');endGame()}$('join').disabled=false}
+    ws.onerror=()=>{$('net-message').textContent='Server non raggiungibile. Riprova tra poco.';$('join').disabled=false;$('create-room').disabled=false};
+    ws.onclose=()=>{if(mode==='online'&&state==='playing'){setNotice('Connessione online interrotta.');endGame()}$('join').disabled=false;$('create-room').disabled=false}
   }
   function leaveOnline(){if(ws){const active=ws;ws=null;if(active.readyState===WebSocket.OPEN)active.close()}for(const id of remotes.keys())removeRemote(id);netId=null;hostId=null}
   function pointAim(event){const rect=canvas.getBoundingClientRect();pointer.x=(event.clientX-rect.left)/rect.width*2-1;pointer.y=-(event.clientY-rect.top)/rect.height*2+1;raycaster.setFromCamera(pointer,camera);const hit=new T.Vector3();if(raycaster.ray.intersectPlane(groundPlane,hit)){aimPoint.copy(hit);if(player){const dx=hit.x-player.position.x,dz=hit.z-player.position.z;player.rotation.y=Math.atan2(dx,dz)}}}
@@ -245,7 +249,8 @@ button,input,select{font:inherit}button{cursor:pointer;color:inherit}button:focu
   $('solo').addEventListener('click',()=>beginGame('solo'));
   $('open-online').addEventListener('click',()=>{home.classList.add('hidden');onlinePanel.classList.remove('hidden')});
   $('cancel-online').addEventListener('click',()=>{onlinePanel.classList.add('hidden');home.classList.remove('hidden')});
-  $('join').addEventListener('click',joinOnline);
+  $('create-room').addEventListener('click',()=>connectOnline('create'));
+  $('join').addEventListener('click',()=>connectOnline('join'));
   $('generate').addEventListener('click',()=>{$('room-code').value=Math.random().toString(36).slice(2,8).toUpperCase()});
   $('characters').addEventListener('click',()=>{home.classList.add('hidden');characterPanel.classList.remove('hidden')});
   $('cancel-characters').addEventListener('click',()=>{characterPanel.classList.add('hidden');home.classList.remove('hidden')});

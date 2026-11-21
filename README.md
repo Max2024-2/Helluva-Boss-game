@@ -29,3 +29,5 @@ The game opens from the bundled web assets. Online rooms use the `/party` WebSoc
 ## Render deployment
 
 The static game is deployed from the `www` directory. The multiplayer WebSocket server is deployed as a separate Render Web Service from the `server` directory, with `npm install` as the build command and `npm start` as the start command. The game’s online form connects to `https://helluva-boss-game-server.onrender.com`.
+
+Online play has separate **Crea stanza** and **Entra con codice** actions. The creator shares the room code; each joining agent enters that code and their own nickname.

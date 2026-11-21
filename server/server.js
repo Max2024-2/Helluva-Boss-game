@@ -48,7 +48,7 @@ function handlePartyMessage(ws, data) {
 
   if (!message || typeof message.type !== 'string') return;
 
-  if (message.type === 'join') {
+  if (message.type === 'create' || message.type === 'join') {
     if (ws.partyRoom) {
       sendJson(ws, { type: 'error', message: 'Sei già in una stanza.' });
       return;
@@ -60,11 +60,19 @@ function handlePartyMessage(ws, data) {
     }
 
     let room = partyRooms.get(code);
+    if (message.type === 'create' && room) {
+      sendJson(ws, { type: 'error', message: 'Questo codice è già occupato. Generane un altro.' });
+      return;
+    }
+    if (message.type === 'join' && !room) {
+      sendJson(ws, { type: 'error', message: 'Stanza non trovata. Chiedi al creatore un codice attivo.' });
+      return;
+    }
     if (room && room.clients.size >= 4) {
       sendJson(ws, { type: 'error', message: 'Stanza piena (massimo 4 agenti).' });
       return;
     }
-    if (!room) {
+    if (message.type === 'create') {
       room = { code, hostId: null, clients: new Map() };
       partyRooms.set(code, room);
     }
