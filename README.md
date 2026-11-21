@@ -25,3 +25,7 @@ The repository workflow `/.github/workflows/build-helluva-game.yml` builds a deb
 When the iOS signing secrets are absent, the workflow reports that the signed IPA was skipped. Actions publish successful builds as downloadable artifacts; GitHub does not copy them onto the Desktop automatically.
 
 The game opens from the bundled web assets. Online rooms use the `/party` WebSocket endpoint; publish the updated repository `server` before expecting public multiplayer to work.
+
+## Render deployment
+
+The static game is deployed from the `www` directory. The multiplayer WebSocket server is deployed as a separate Render Web Service from the `server` directory, with `npm install` as the build command and `npm start` as the start command. The game’s online form connects to `https://helluva-boss-game-server.onrender.com`.
